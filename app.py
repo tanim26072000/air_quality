@@ -39,9 +39,9 @@ with col2:
 # selected_month = selected_date.month
 # Your climate data h5 file
 data = pd.read_hdf(
-    os.path.join(os.getcwd(), 'pm25_final.h5'), key=f'{selected_month}_{selected_year}')
+    '/app/pm25_final.h5'), key=f'{selected_month}_{selected_year}')
 
-corr_df = pd.read_csv(os.path.join(os.getcwd(), 'corr_df.csv'))
+    corr_df = pd.read_csv('/app/corr_df.csv'))
 # Convert lat/lon data points into a GeoDataFrame
 geometry = [Point(xy) for xy in zip(data['longitude'], data['latitude'])]
 geo_data = gpd.GeoDataFrame(data, crs="EPSG:4326", geometry=geometry)
