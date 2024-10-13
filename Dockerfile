@@ -2,10 +2,10 @@
 FROM python:3.11.4
 
 # Set the default working directory
-WORKDIR /
+WORKDIR /app
 
 # Copy everything from the current directory to the container's root
-COPY . .
+COPY . /app
 
 # Install required system packages (for geopandas)
 RUN apt-get update && apt-get install -y libgeos-dev
