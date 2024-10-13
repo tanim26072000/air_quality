@@ -4,6 +4,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 from geopandas.tools import sjoin
 import pydeck as pdk
+import os
 
 # Title
 st.title("Interactive PM\u2082\u002E\u2085 Data with spatio-temporal Selection")
@@ -38,8 +39,9 @@ with col2:
 # selected_month = selected_date.month
 # Your climate data h5 file
 data = pd.read_hdf(
-    'pm25_final.h5', key=f'{selected_month}_{selected_year}')
-corr_df= pd.read_csv('corr_df.csv')
+    os.path.join(os.getcwd(), 'pm25_final.h5'), key=f'{selected_month}_{selected_year}')
+
+corr_df = pd.read_csv(os.path.join(os.getcwd(), 'corr_df.csv'))
 # Convert lat/lon data points into a GeoDataFrame
 geometry = [Point(xy) for xy in zip(data['longitude'], data['latitude'])]
 geo_data = gpd.GeoDataFrame(data, crs="EPSG:4326", geometry=geometry)
