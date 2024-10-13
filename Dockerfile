@@ -1,18 +1,16 @@
 # Use Python 3.11-slim as the base image
-FROM python:3.11-slim
+FROM python:3.11.4
 
-# Set the working directory in the container
-WORKDIR /app
+# Set the default working directory
+WORKDIR /
 
-# Clone your GitHub repository into the working directory
-RUN apt-get update && apt-get install -y git && \
-    git clone https://github.com/tanim26072000/air_quality.git /app
+# Copy everything from the current directory to the container's root
+COPY . .
 
-# Install required system packages (e.g., for geopandas)
-RUN apt-get install -y libgeos-dev
+# Install required system packages (for geopandas)
+RUN apt-get update && apt-get install -y libgeos-dev
 
 # Install Python dependencies
-COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
