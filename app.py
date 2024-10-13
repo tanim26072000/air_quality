@@ -11,7 +11,7 @@ st.title("Interactive PM\u2082\u002E\u2085 Data with spatio-temporal Selection")
 gdf = gpd.read_file(
     'bgd_adm_bbs_20201113_shp/bgd_admbnda_adm3_bbs_20201113.shp')
 months = ["January", "February", "March", "April", "May", "June",
-         "July", "August", "September", "October", "November", "December"]
+          "July", "August", "September", "October", "November", "December"]
 # Apply custom CSS to adjust selectbox width
 st.markdown(
     """
@@ -30,14 +30,8 @@ with col1:
         'Select a month', months, key='select_month')
 with col2:
     selected_year = st.selectbox(
-        'Select a year', list(range(2000,2020)), key='select_year')
-        
-# selected_date = st.date_input("Select Date", value=datetime.date(
-#     2010, 1, 1), min_value=datetime.date(2000, 1, 1), max_value=datetime.date(2019, 12, 31))
-# # Extract the year and month from the selected date
-# selected_year = selected_date.year
-# selected_month = selected_date.month
-# Your climate data h5 file
+        'Select a year', list(range(2000, 2020)), key='select_year')
+
 data = pd.read_hdf(
     'pm25_final.h5', key=f'{selected_month}_{selected_year}')
 
@@ -103,13 +97,38 @@ elif scope == 'District':
 # Input to select the model for comparison
 selected_model = st.radio('Select Model for Comparison', [
     'GNN+LSTM', 'GNN', 'CNN+LSTM', 'CNN'], key='select_model', horizontal=True)
-selected_model= selected_model.lower()
+selected_model = selected_model.lower()
 df = filtered_geo_data[['latitude', 'longitude', 'observed',
                         'gnn+lstm', 'gnn', 'cnn+lstm', 'cnn', 'ADM1_EN', 'ADM2_EN', 'ADM3_EN']]
 corr = filtered_corr[['latitude', 'longitude',
                      'gnn+lstm', 'gnn', 'cnn+lstm', 'cnn', 'ADM1_EN', 'ADM2_EN', 'ADM3_EN']]
 # corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']
 #      ] = corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']]*10000
+main_df= df.copy()
+
+def get_status_color(value):
+    if value <= 12:
+        return "Good", 'green'  # Green for Good
+    elif value <= 35.4:
+        return "Moderate", 'yellow'  # Yellow for Moderate
+    elif value <= 55.4:
+        # Orange for Unhealthy for Sensitive Groups
+        return "Unhealthy for Sensitive Groups", 'orange'
+    elif value <= 150.4:
+        return "Unhealthy", 'red'  # Red for Unhealthy
+    elif value <= 250.4:
+        # Purple for Very Unhealthy
+        return "Very Unhealthy", 'purple'
+    else:
+        return "Hazardous", 'darkred'  # Dark Red for Hazardous
+
+
+# Create 'observed_status', 'predicted_status' and color columns
+df[['observed_status', 'observed_color']] = df['observed'].apply(
+    lambda x: pd.Series(get_status_color(x)))
+df[['predicted_status', 'predicted_color']] = df[selected_model].apply(
+    lambda x: pd.Series(get_status_color(x)))
+df['observed']= df['observed'].round(2)
 corr = corr.assign(scaled_elevation=corr[selected_model] * 5000)
 # corr.rename(columns={'corr_gnn_lstm': 'gnn+lstm', 'corr_gnn':'gnn', 'corr_cnn_lstm':'cnn+lstm','cor_cnn':'cnn'})
 # basemap_options = st.selectbox(
@@ -148,25 +167,29 @@ if st.button('Generate Plot'):
     #     tooltip=True
     # )
     observed_layer = pdk.Layer(
-    "GridCellLayer",
-    df,
-    get_position='[longitude, latitude]',  # Specify the center of each grid cell
-    cell_size=1000,  # Size of the grid cells (in meters)
-    get_elevation='observed',  # Elevation represents the observed value
-    get_fill_color=f'[255, observed*2, 100,128]',  # Color based on observed value
-    pickable=True,
-    extruded=True,  # Extrude to give a 3D effect
-    elevation_scale=100  # Scale of the elevation
-)
+        "GridCellLayer",
+        df,
+        # Specify the center of each grid cell
+        get_position='[longitude, latitude]',
+        cell_size=1000,  # Size of the grid cells (in meters)
+        get_elevation='observed',  # Elevation represents the observed value
+        # Color based on observed value
+        get_fill_color=f'[255, observed*2, 100,128]',
+        pickable=True,
+        extruded=True,  # Extrude to give a 3D effect
+        elevation_scale=100  # Scale of the elevation
+    )
 
     # Step 2: Create a PyDeck GridCellLayer for predicted values (GNN-LSTM)
     predicted_layer = pdk.Layer(
         "GridCellLayer",
         df,
-        get_position='[longitude, latitude]',  # Specify the center of each grid cell
+        # Specify the center of each grid cell
+        get_position='[longitude, latitude]',
         cell_size=1000,  # Size of the grid cells (in meters)
         get_elevation=selected_model,  # Elevation represents the predicted value
-        get_fill_color=f'[255, {selected_model}*2, 100, 128]',  # Color based on predicted value
+        # Color based on predicted value
+        get_fill_color=f'[255, {selected_model}*2, 100, 128]',
         pickable=True,
         extruded=True,  # Extrude to give a 3D effect
         elevation_scale=100  # Scale of the elevation
@@ -182,7 +205,7 @@ if st.button('Generate Plot'):
         get_fill_color=f'[255, {selected_model}*255, 100, 128]',
         pickable=True,
         extruded=True,  # Extrude to give a 3D effect
-        elevation_scale=1 # Scale of the elevation
+        elevation_scale=1  # Scale of the elevation
     )
 
     # Step 3: Define a view state for both maps (same view for consistency)
@@ -202,8 +225,9 @@ if st.button('Generate Plot'):
             "html": f"<b>Latitude:</b> {{latitude}} <br><b>Longitude:</b> {{longitude}}<br>"
             f"<b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>"
             f"<b>Upazila:</b> {{ADM3_EN}}<br>"
-            f"<b>Observed:</b> <span style='color:yellow;'>{{observed}}</span><br>"
-            f"<b>Predicted:</b> {{{selected_model}}}",
+            f"<b>Observed:</b> <span style='color:{{observed_color}};'>{{observed}} ({{observed_status}})</span><br>"
+            f"<b>Predicted:</b> <span style='color:{{predicted_color}};'>{{{selected_model}}} ({{predicted_status}})",
+
             "style": {"color": "white"}
         }
     )
@@ -216,8 +240,8 @@ if st.button('Generate Plot'):
             "html": f"<b>Latitude:</b> {{latitude}} <br><b>Longitude:</b> {{longitude}}<br>"
             f"<b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>"
             f"<b>Upazila:</b> {{ADM3_EN}}<br>"
-            f"<b>Observed:</b> {{observed}}<br>"
-            f"<b>Predicted:</b> <span style='color:yellow;'>{{{selected_model}}}</span>",
+            f"<b>Observed:</b> <span style='color:{{observed_color}};'>{{observed}} ({{observed_status}})</span><br>"
+            f"<b>Predicted:</b> <span style='color:{{predicted_color}};'>{{{selected_model}}} ({{predicted_status}})",
             "style": {"color": "white"}
         }
     )
@@ -242,12 +266,12 @@ if st.button('Generate Plot'):
 
     # Conditionally display the maps based on checkbox selections
     with col1:
-            st.subheader("Observed Data Map")
-            st.pydeck_chart(observed_deck)
+        st.subheader("Observed Data Map")
+        st.pydeck_chart(observed_deck)
 
     with col2:
-            st.subheader("Predicted Data Map")
-            st.pydeck_chart(predicted_deck)
+        st.subheader("Predicted Data Map")
+        st.pydeck_chart(predicted_deck)
     st.write("""
     ### PM$_{2.5}$ Concentration Ranges and Health Impacts:
     - **0-12 µg/m³ (Good)**: Air quality is considered satisfactory, posing little or no health risk.
@@ -259,8 +283,8 @@ if st.button('Generate Plot'):
     """)
     st.subheader("Spatial Correlation Map")
     st.pydeck_chart(corr_deck)
-        # Download filtered data as CSV
-    csv_data = df.to_csv(index=False).encode('utf-8')
+    # Download filtered data as CSV
+    csv_data = main_df.to_csv(index=False).encode('utf-8')
 
     st.download_button(
         label="Download Filtered Data as CSV",
