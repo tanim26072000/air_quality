@@ -248,6 +248,15 @@ if st.button('Generate Plot'):
     with col2:
             st.subheader("Predicted Data Map")
             st.pydeck_chart(predicted_deck)
+    st.write("""
+    ### PM$_{2.5}$ Concentration Ranges and Health Impacts:
+    - **0-12 µg/m³ (Good)**: Air quality is considered satisfactory, posing little or no health risk.
+    - **12.1-35.4 µg/m³ (Moderate)**: Air quality is acceptable, but sensitive individuals may experience health issues.
+    - **35.5-55.4 µg/m³ (Unhealthy for Sensitive Groups)**: Sensitive groups may experience health effects.
+    - **55.5-150.4 µg/m³ (Unhealthy)**: Everyone may experience health effects.
+    - **150.5-250.4 µg/m³ (Very Unhealthy)**: Severe health effects for everyone.
+    - **>250.5 µg/m³ (Hazardous)**: Health warnings; emergency conditions.
+    """)
     st.subheader("Spatial Correlation Map")
     st.pydeck_chart(corr_deck)
         # Download filtered data as CSV
