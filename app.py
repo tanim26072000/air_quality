@@ -104,7 +104,8 @@ corr = filtered_corr[['latitude', 'longitude',
                      'gnn+lstm', 'gnn', 'cnn+lstm', 'cnn', 'ADM1_EN', 'ADM2_EN', 'ADM3_EN']]
 # corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']
 #      ] = corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']]*10000
-main_df= df.copy()
+main_df = df.copy()
+
 
 def get_status_color(value):
     if value <= 12:
@@ -127,14 +128,26 @@ def get_status_color(value):
         return "Hazardous", [128, 0, 0, 160], "darkred"
 
 
-# Create 'observed_status', 'predicted_status' and color columns
-df[['observed_status', 'observed_color', 'observed_color_css']] = df['observed'].apply(
-    lambda x: pd.Series(get_status_color(x)))
-df[['predicted_status', 'predicted_color', 'predicted_color_css']] = df[selected_model].apply(
-    lambda x: pd.Series(get_status_color(x)))
-df['observed']= df['observed'].round(2)
+# Use assign to avoid SettingWithCopyWarning
+df = df.assign(observed_status=df['observed'].apply(lambda x: get_status_color(x)[0]),
+               observed_color=df['observed'].apply(
+                   lambda x: get_status_color(x)[1]),
+               observed_color_css=df['observed'].apply(
+                   lambda x: get_status_color(x)[2]),
+               predicted_status=df[selected_model].apply(
+                   lambda x: get_status_color(x)[0]),
+               predicted_color=df[selected_model].apply(
+                   lambda x: get_status_color(x)[1]),
+               predicted_color_css=df[selected_model].apply(
+                   lambda x: get_status_color(x)[2]),
+               observed=df['observed'].round(2),
+               predicted_elevation= df[selected_model] * 50,
+               observed_elevation= df['observed'] * 50
+               )
+
+# For corr DataFrame, continue using assign to avoid issues
 corr = corr.assign(scaled_elevation=corr[selected_model] * 5000)
-df['predicted_elevation'] = df[selected_model] * 50
+df[['predicted_elevation', 'observed_elevation']] = df[[selected_model,'observed']] * 50
 # print(type(df), df.shape)
 # corr.rename(columns={'corr_gnn_lstm': 'gnn+lstm', 'corr_gnn':'gnn', 'corr_cnn_lstm':'cnn+lstm','cor_cnn':'cnn'})
 # basemap_options = st.selectbox(
@@ -178,7 +191,7 @@ if st.button('Generate Plot'):
         # Specify the center of each grid cell
         get_position='[longitude, latitude]',
         cell_size=1000,  # Size of the grid cells (in meters)
-        get_elevation='observed',  # Elevation represents the observed value
+        get_elevation='observed_elevation',  # Elevation represents the observed value
         # Color based on observed value
         get_fill_color='observed_color',
         pickable=True,
@@ -224,7 +237,7 @@ if st.button('Generate Plot'):
 
     # Step 4: Create PyDeck Deck objects for both observed and predicted data
     observed_deck = pdk.Deck(
-        layers=[observed_layer, predicted_layer],
+        layers=[observed_layer],
         initial_view_state=view_state,
         map_style=f'mapbox://styles/mapbox/streets-v12',
         tooltip={
