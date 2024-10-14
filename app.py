@@ -299,7 +299,7 @@ if st.button('Generate Plot'):
     # """)
     st.markdown(f"""
     ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
-    Total data points: {total_count}
+    Total data points within selected spatio-temporal range: {total_count}
     - <span style='color:green;'>**0-12 µg/m³ (Good)**</span>: Satisfactory, posing little or no health risk. 
       <br>Observed: {observed_counts.get('Good', 0)}, Predicted: {predicted_counts.get('Good', 0)}
     - <span style='color:yellow;'>**12.1-35.4 µg/m³ (Moderate)**</span>: Acceptable, but sensitive individuals may experience health issues. 
