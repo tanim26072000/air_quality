@@ -108,28 +108,34 @@ main_df= df.copy()
 
 def get_status_color(value):
     if value <= 12:
-        return "Good", 'green'  # Green for Good
+        # Green for Good
+        return "Good", [0, 255, 0, 160], "green"
     elif value <= 35.4:
-        return "Moderate", 'yellow'  # Yellow for Moderate
+        # Yellow for Moderate
+        return "Moderate", [255, 255, 0, 160], "yellow"
     elif value <= 55.4:
         # Orange for Unhealthy for Sensitive Groups
-        return "Unhealthy for Sensitive Groups", 'orange'
+        return "Unhealthy for Sensitive Groups", [255, 165, 0, 160], "orange"
     elif value <= 150.4:
-        return "Unhealthy", 'red'  # Red for Unhealthy
+        # Red for Unhealthy
+        return "Unhealthy", [255, 0, 0, 160], "red"
     elif value <= 250.4:
         # Purple for Very Unhealthy
-        return "Very Unhealthy", 'purple'
+        return "Very Unhealthy", [153, 50, 204, 160], "purple"
     else:
-        return "Hazardous", 'darkred'  # Dark Red for Hazardous
+        # Dark Red for Hazardous
+        return "Hazardous", [128, 0, 0, 160], "darkred"
 
 
 # Create 'observed_status', 'predicted_status' and color columns
-df[['observed_status', 'observed_color']] = df['observed'].apply(
+df[['observed_status', 'observed_color', 'observed_color_css']] = df['observed'].apply(
     lambda x: pd.Series(get_status_color(x)))
-df[['predicted_status', 'predicted_color']] = df[selected_model].apply(
+df[['predicted_status', 'predicted_color', 'predicted_color_css']] = df[selected_model].apply(
     lambda x: pd.Series(get_status_color(x)))
 df['observed']= df['observed'].round(2)
 corr = corr.assign(scaled_elevation=corr[selected_model] * 5000)
+df['predicted_elevation'] = df[selected_model] * 50
+# print(type(df), df.shape)
 # corr.rename(columns={'corr_gnn_lstm': 'gnn+lstm', 'corr_gnn':'gnn', 'corr_cnn_lstm':'cnn+lstm','cor_cnn':'cnn'})
 # basemap_options = st.selectbox(
 #     "Select Basemap", ['light', 'dark', 'satellite', 'streets'])
@@ -174,10 +180,10 @@ if st.button('Generate Plot'):
         cell_size=1000,  # Size of the grid cells (in meters)
         get_elevation='observed',  # Elevation represents the observed value
         # Color based on observed value
-        get_fill_color=f'[255, observed*2, 100,128]',
+        get_fill_color='observed_color',
         pickable=True,
         extruded=True,  # Extrude to give a 3D effect
-        elevation_scale=100  # Scale of the elevation
+        elevation_scale=1  # Scale of the elevation
     )
 
     # Step 2: Create a PyDeck GridCellLayer for predicted values (GNN-LSTM)
@@ -187,12 +193,12 @@ if st.button('Generate Plot'):
         # Specify the center of each grid cell
         get_position='[longitude, latitude]',
         cell_size=1000,  # Size of the grid cells (in meters)
-        get_elevation=selected_model,  # Elevation represents the predicted value
+        get_elevation='predicted_elevation',  # Elevation represents the predicted value
         # Color based on predicted value
-        get_fill_color=f'[255, {selected_model}*2, 100, 128]',
+        get_fill_color='predicted_color',
         pickable=True,
         extruded=True,  # Extrude to give a 3D effect
-        elevation_scale=100  # Scale of the elevation
+        elevation_scale=1  # Scale of the elevation
     )
     corr_layer = pdk.Layer(
         "GridCellLayer",
@@ -222,13 +228,17 @@ if st.button('Generate Plot'):
         initial_view_state=view_state,
         map_style=f'mapbox://styles/mapbox/streets-v12',
         tooltip={
-            "html": f"<b>Latitude:</b> {{latitude}} <br><b>Longitude:</b> {{longitude}}<br>"
-            f"<b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>"
-            f"<b>Upazila:</b> {{ADM3_EN}}<br>"
-            f"<b>Observed:</b> <span style='color:{{observed_color}};'>{{observed}} ({{observed_status}})</span><br>"
-            f"<b>Predicted:</b> <span style='color:{{predicted_color}};'>{{{selected_model}}} ({{predicted_status}})",
-
-            "style": {"color": "white"}
+            "html": f"""
+                <b>Latitude:</b> {{latitude}} <br/>
+                <b>Longitude:</b> {{longitude}} <br/>
+                <b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>
+                <b>Upazila:</b> {{ADM3_EN}}<br>
+                <b>Observed:</b> <span style='color:{{observed_color_css}};'>{{observed}} ({{observed_status}})</span><br/>
+                <b>Predicted:</b> <span style='color:{{predicted_color_css}};'>{{{selected_model}}} ({{predicted_status}})</span>
+                """,
+            "style": {
+                "color": "white"
+            }
         }
     )
 
@@ -237,11 +247,14 @@ if st.button('Generate Plot'):
         initial_view_state=view_state,
         map_style=f'mapbox://styles/mapbox/streets-v12',
         tooltip={
-            "html": f"<b>Latitude:</b> {{latitude}} <br><b>Longitude:</b> {{longitude}}<br>"
-            f"<b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>"
-            f"<b>Upazila:</b> {{ADM3_EN}}<br>"
-            f"<b>Observed:</b> <span style='color:{{observed_color}};'>{{observed}} ({{observed_status}})</span><br>"
-            f"<b>Predicted:</b> <span style='color:{{predicted_color}};'>{{{selected_model}}} ({{predicted_status}})",
+            "html": f"""
+                <b>Latitude:</b> {{latitude}} <br/>
+                <b>Longitude:</b> {{longitude}} <br/>
+                <b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>
+                <b>Upazila:</b> {{ADM3_EN}}<br>
+                <b>Observed:</b> <span style='color:{{observed_color_css}};'>{{observed}} ({{observed_status}})</span><br/>
+                <b>Predicted:</b> <span style='color:{{predicted_color_css}};'>{{{selected_model}}} ({{predicted_status}})</span>
+                """,
             "style": {"color": "white"}
         }
     )
@@ -272,15 +285,34 @@ if st.button('Generate Plot'):
     with col2:
         st.subheader("Predicted Data Map")
         st.pydeck_chart(predicted_deck)
-    st.write("""
-    ### PM$_{2.5}$ Concentration Ranges and Health Impacts:
-    - **0-12 µg/m³ (Good)**: Air quality is considered satisfactory, posing little or no health risk.
-    - **12.1-35.4 µg/m³ (Moderate)**: Air quality is acceptable, but sensitive individuals may experience health issues.
-    - **35.5-55.4 µg/m³ (Unhealthy for Sensitive Groups)**: Sensitive groups may experience health effects.
-    - **55.5-150.4 µg/m³ (Unhealthy)**: Everyone may experience health effects.
-    - **150.5-250.4 µg/m³ (Very Unhealthy)**: Severe health effects for everyone.
-    - **>250.5 µg/m³ (Hazardous)**: Health warnings; emergency conditions.
-    """)
+    observed_counts = df['observed_status'].value_counts().to_dict()
+    predicted_counts = df['predicted_status'].value_counts().to_dict()
+    total_count = len(df)
+    # st.write("""
+    # ### PM$_{2.5}$ Concentration Ranges and Health Impacts:
+    # - **0-12 µg/m³ (Good)**: Air quality is considered satisfactory, posing little or no health risk.
+    # - **12.1-35.4 µg/m³ (Moderate)**: Air quality is acceptable, but sensitive individuals may experience health issues.
+    # - **35.5-55.4 µg/m³ (Unhealthy for Sensitive Groups)**: Sensitive groups may experience health effects.
+    # - **55.5-150.4 µg/m³ (Unhealthy)**: Everyone may experience health effects.
+    # - **150.5-250.4 µg/m³ (Very Unhealthy)**: Severe health effects for everyone.
+    # - **>250.5 µg/m³ (Hazardous)**: Health warnings; emergency conditions.
+    # """)
+    st.markdown(f"""
+    ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
+    Total data points: {total_count}
+    - <span style='color:green;'>**0-12 µg/m³ (Good)**</span>: Satisfactory, posing little or no health risk. 
+      <br>Observed: {observed_counts.get('Good', 0)}, Predicted: {predicted_counts.get('Good', 0)}
+    - <span style='color:yellow;'>**12.1-35.4 µg/m³ (Moderate)**</span>: Acceptable, but sensitive individuals may experience health issues. 
+      <br>Observed: {observed_counts.get('Moderate', 0)}, Predicted: {predicted_counts.get('Moderate', 0)}
+    - <span style='color:orange;'>**35.5-55.4 µg/m³ (Unhealthy for Sensitive Groups)**</span>: Sensitive groups may experience health effects. 
+      <br>Observed: {observed_counts.get('Unhealthy for Sensitive Groups', 0)}, Predicted: {predicted_counts.get('Unhealthy for Sensitive Groups', 0)}
+    - <span style='color:red;'>**55.5-150.4 µg/m³ (Unhealthy)**</span>: Everyone may experience health effects. 
+      <br>Observed: {observed_counts.get('Unhealthy', 0)}, Predicted: {predicted_counts.get('Unhealthy', 0)}
+    - <span style='color:purple;'>**150.5-250.4 µg/m³ (Very Unhealthy)**</span>: Severe health effects for everyone. 
+      <br>Observed: {observed_counts.get('Very Unhealthy', 0)}, Predicted: {predicted_counts.get('Very Unhealthy', 0)}
+    - <span style='color:darkred;'>**>250.5 µg/m³ (Hazardous)**</span>: Health warnings; emergency conditions. 
+      <br>Observed: {observed_counts.get('Hazardous', 0)}, Predicted: {predicted_counts.get('Hazardous', 0)}
+""", unsafe_allow_html=True)
     st.subheader("Spatial Correlation Map")
     st.pydeck_chart(corr_deck)
     # Download filtered data as CSV
