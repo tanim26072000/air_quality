@@ -95,7 +95,7 @@ elif scope == 'District':
         geo_corr, selected_district_shape, how="inner", predicate="within")
 
 # Input to select the model for comparison
-selected_model = st.radio('Select Model for Comparison', [
+selected_model = st.radio('Select Model to compare prediction with observed values', [
     'GNN+LSTM', 'GNN', 'CNN+LSTM', 'CNN'], key='select_model', horizontal=True)
 selected_model = selected_model.lower()
 df = filtered_geo_data[['latitude', 'longitude', 'observed',
