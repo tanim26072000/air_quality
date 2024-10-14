@@ -335,6 +335,7 @@ if st.button('Generate Plot'):
       <br>Observed: {observed_counts.get('Very Unhealthy', 0)}, Predicted: {predicted_counts.get('Very Unhealthy', 0)}
     - <span style='color:darkred;'>**>250.5 µg/m³ (Hazardous)**</span>: Health warnings; emergency conditions. 
       <br>Observed: {observed_counts.get('Hazardous', 0)}, Predicted: {predicted_counts.get('Hazardous', 0)}
+    <br>For more information, visit [here](https://aqicn.org/faq/2013-09-09/revised-pm25-aqi-breakpoints/).
     """, unsafe_allow_html=True)
     st.markdown("""
     <h3 style='text-align: center;'>Spatial Correlation Map</h3>
