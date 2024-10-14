@@ -6,8 +6,12 @@ from geopandas.tools import sjoin
 import pydeck as pdk
 import os
 
+# Set page configuration to wide layout
+st.set_page_config(page_title="Interactive PM2.5 Data", layout="wide")
 # Title
-st.title("Interactive PM\u2082\u002E\u2085 Data with spatio-temporal Selection")
+st.markdown("""
+    <h1 style='text-align: center;'>Interactive PM&#8322;&#x2E;&#8325; Data with spatio-temporal Selection</h1>
+""", unsafe_allow_html=True)
 gdf = gpd.read_file(
     'bgd_adm_bbs_20201113_shp/bgd_admbnda_adm3_bbs_20201113.shp')
 months = ["January", "February", "March", "April", "May", "June",
@@ -285,18 +289,24 @@ if st.button('Generate Plot'):
     )
 
     # Step 5: Integrate into Streamlit
-    st.title(f"{s} at {selected_month}-{selected_year}")
+    st.markdown(f"""
+                <h2 style='text-align: center;'>{s} at {selected_month}-{selected_year}</h2>
+                """, unsafe_allow_html=True)
 
     # Columns for the maps
     col1, col2 = st.columns(2)
 
     # Conditionally display the maps based on checkbox selections
     with col1:
-        st.subheader("Observed Data Map")
+        st.markdown("""
+        <h3 style='text-align: center;'>Observed Data Map</h3>
+    """, unsafe_allow_html=True)
         st.pydeck_chart(observed_deck)
 
     with col2:
-        st.subheader("Predicted Data Map")
+        st.markdown("""
+        <h3 style='text-align: center;'>Predicted Data Map</h3>
+    """, unsafe_allow_html=True)
         st.pydeck_chart(predicted_deck)
     observed_counts = df['observed_status'].value_counts().to_dict()
     predicted_counts = df['predicted_status'].value_counts().to_dict()
@@ -325,8 +335,10 @@ if st.button('Generate Plot'):
       <br>Observed: {observed_counts.get('Very Unhealthy', 0)}, Predicted: {predicted_counts.get('Very Unhealthy', 0)}
     - <span style='color:darkred;'>**>250.5 µg/m³ (Hazardous)**</span>: Health warnings; emergency conditions. 
       <br>Observed: {observed_counts.get('Hazardous', 0)}, Predicted: {predicted_counts.get('Hazardous', 0)}
-""", unsafe_allow_html=True)
-    st.subheader("Spatial Correlation Map")
+    """, unsafe_allow_html=True)
+    st.markdown("""
+    <h3 style='text-align: center;'>Spatial Correlation Map</h3>
+    """, unsafe_allow_html=True)
     st.pydeck_chart(corr_deck)
     # Download filtered data as CSV
     csv_data = main_df.to_csv(index=False).encode('utf-8')
