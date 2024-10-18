@@ -98,11 +98,7 @@ elif scope == 'District':
     # selected_district_shape = gdf[gdf['ADM2_EN']
     #                               == selected_district]
 
-    # # Spatial join to filter climate data points that fall within the selected district
-    # filtered_geo_data = sjoin(
-    #     geo_data, selected_district_shape, how="inner", predicate="within")
-    # filtered_corr = sjoin(
-    #     geo_corr, selected_district_shape, how="inner", predicate="within")
+    
     filtered_geo_data = data[data['ADM2_EN'] == selected_district]
     filtered_corr = corr_df[corr_df['ADM2_EN'] == selected_district]
 
