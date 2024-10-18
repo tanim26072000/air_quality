@@ -5,6 +5,8 @@ from shapely.geometry import Point
 from geopandas.tools import sjoin
 import pydeck as pdk
 import os
+from sklearn.metrics import r2_score, mean_absolute_error
+import numpy as np
 
 # Set page configuration to wide layout
 st.set_page_config(page_title="Interactive PM2.5 Data", layout="wide")
@@ -12,8 +14,8 @@ st.set_page_config(page_title="Interactive PM2.5 Data", layout="wide")
 st.markdown("""
     <h1 style='text-align: center;'>Interactive PM&#8322;&#x2E;&#8325; Data with spatio-temporal Selection</h1>
 """, unsafe_allow_html=True)
-gdf = gpd.read_file(
-    'bgd_adm_bbs_20201113_shp/bgd_admbnda_adm3_bbs_20201113.shp')
+# gdf = gpd.read_file(
+#     'bgd_adm_bbs_20201113_shp/bgd_admbnda_adm3_bbs_20201113.shp')
 months = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 # Apply custom CSS to adjust selectbox width
@@ -40,10 +42,10 @@ data = pd.read_hdf(
     'pm25_final.h5', key=f'{selected_month}_{selected_year}')
 
 corr_df = pd.read_csv('corr_df.csv')
-# Convert lat/lon data points into a GeoDataFrame
-geometry = [Point(xy) for xy in zip(data['longitude'], data['latitude'])]
-geo_data = gpd.GeoDataFrame(data, crs="EPSG:4326", geometry=geometry)
-geo_corr = gpd.GeoDataFrame(corr_df, crs="EPSG:4326", geometry=geometry)
+# # Convert lat/lon data points into a GeoDataFrame
+# geometry = [Point(xy) for xy in zip(data['longitude'], data['latitude'])]
+# geo_data = gpd.GeoDataFrame(data, crs="EPSG:4326", geometry=geometry)
+# geo_corr = gpd.GeoDataFrame(corr_df, crs="EPSG:4326", geometry=geometry)
 
 # Dropdown to select the scope (Bangladesh, Division, District)
 scope = st.radio(
@@ -52,51 +54,55 @@ scope = st.radio(
 )
 
 if scope == 'Whole Bangladesh':
-    # No need for spatial join, use the entire filtered data for Bangladesh
-    filtered_geo_data = sjoin(
-        geo_data, gdf, how="inner", predicate="within")
-    filtered_corr = sjoin(
-        geo_corr, gdf, how="inner", predicate="within")
+    # # No need for spatial join, use the entire filtered data for Bangladesh
+    # filtered_geo_data = sjoin(
+    #     geo_data, gdf, how="inner", predicate="within")
+    # filtered_corr = sjoin(
+    #     geo_corr, gdf, how="inner", predicate="within")
+    filtered_geo_data= data
+    filtered_corr= corr_df
     s = 'Bangladesh'
     z = 5.5
 
 elif scope == 'Division':
     # Select a division
-    division_options = list(gdf['ADM1_EN'].unique())
+    division_options = list(data['ADM1_EN'].unique())
     division_options.sort()
     selected_division = st.selectbox(
         'Select Division', division_options, key='select_division')
     s = f'{selected_division}'
     z = 7.5
 
-    # Filter the division boundary from the shapefile
-    selected_division_shape = gdf[gdf['ADM1_EN']
-                                  == selected_division]
+    # # Filter the division boundary from the shapefile
+    # selected_division_shape = gdf[gdf['ADM1_EN']
+    #                               == selected_division]
 
     # Spatial join to filter climate data points that fall within the selected division
-    filtered_geo_data = sjoin(
-        geo_data, selected_division_shape, how="inner", predicate="within")
-    filtered_corr = sjoin(
-        geo_corr, selected_division_shape, how="inner", predicate="within")
+    # filtered_geo_data = sjoin(
+    #     geo_data, selected_division_shape, how="inner", predicate="within")
+    # filtered_corr = sjoin(
+    #     geo_corr, selected_division_shape, how="inner", predicate="within")
+    filtered_geo_data = data[data['ADM1_EN'] == selected_division]
+    filtered_corr = corr_df[corr_df['ADM1_EN'] == selected_division]
 
 elif scope == 'District':
     # Select a district
-    district_options = list(gdf['ADM2_EN'].unique())
+    district_options = list(data['ADM2_EN'].unique())
     district_options.sort()
     selected_district = st.selectbox(
         'Select District', district_options, key='select_district')
     s = f'{selected_district}'
     z = 8
 
-    # Filter the district boundary from the shapefile
-    selected_district_shape = gdf[gdf['ADM2_EN']
-                                  == selected_district]
+    # # Filter the district boundary from the shapefile
+    # selected_district_shape = gdf[gdf['ADM2_EN']
+    #                               == selected_district]
 
-    # Spatial join to filter climate data points that fall within the selected district
-    filtered_geo_data = sjoin(
-        geo_data, selected_district_shape, how="inner", predicate="within")
-    filtered_corr = sjoin(
-        geo_corr, selected_district_shape, how="inner", predicate="within")
+    
+    filtered_geo_data = data[data['ADM2_EN'] == selected_district]
+    filtered_corr = corr_df[corr_df['ADM2_EN'] == selected_district]
+
+    
 
 # Input to select the model for comparison
 selected_model = st.radio('Select Model to compare prediction with observed values', [
@@ -135,16 +141,16 @@ def get_status_color(value):
 # Use assign to avoid SettingWithCopyWarning
 df = df.assign(observed_status=df['observed'].apply(lambda x: get_status_color(x)[0]),
                observed_color=df['observed'].apply(
-                   lambda x: get_status_color(x)[1]),
+                    lambda x: get_status_color(x)[1]),
                observed_color_css=df['observed'].apply(
-                   lambda x: get_status_color(x)[2]),
+                    lambda x: get_status_color(x)[2]),
                predicted_status=df[selected_model].apply(
-                   lambda x: get_status_color(x)[0]),
+                    lambda x: get_status_color(x)[0]),
                predicted_color=df[selected_model].apply(
-                   lambda x: get_status_color(x)[1]),
+                    lambda x: get_status_color(x)[1]),
                predicted_color_css=df[selected_model].apply(
-                   lambda x: get_status_color(x)[2]),
-               observed=df['observed'].round(2),
+                    lambda x: get_status_color(x)[2]),
+            #    observed=df['observed'].round(2),
                predicted_elevation= df[selected_model] * 50,
                observed_elevation= df['observed'] * 50
                )
@@ -320,28 +326,63 @@ if st.button('Generate Plot'):
     # - **150.5-250.4 µg/m³ (Very Unhealthy)**: Severe health effects for everyone.
     # - **>250.5 µg/m³ (Hazardous)**: Health warnings; emergency conditions.
     # """)
+    # Calculate statistics for observed and predicted values
+    observed_min = df['observed'].min()
+    observed_max = df['observed'].max()
+    observed_mean = df['observed'].mean()
+    observed_median = df['observed'].median()
+
+    predicted_min = df[selected_model].min()
+    predicted_max = df[selected_model].max()
+    predicted_mean = df[selected_model].mean()
+    predicted_median = df[selected_model].median()
+
+    # RMSE (Root Mean Squared Error)
+    # Assuming 'actual' and 'predicted' are the columns of your dataframe
+    df['squared_diff'] = (df['observed'] - df[selected_model]) ** 2
+    rmse = np.sqrt(df['squared_diff'].mean())
+
+    # MAE (Mean Absolute Error)
+    mae = mean_absolute_error(df['observed'], df[selected_model])
+
+    # Add the markdown section with statistics and counts combined in a single table
     st.markdown(f"""
     ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
-    Total data points within selected spatio-temporal range: {total_count}
+    Total data points within selected spatio-temporal range: {total_count}<br>
+    Root of mean squared error (RMSE): {rmse:.2f}<br>
+    Mean absolute error (MAE): {mae:.2f}<br>
+    **Comparison of Observed and Predicted Values**
+
+    | Statistic/Category                 | Observed | Predicted ({selected_model}) |
+    |-----------------------------------|-----------------------|------------------------|
+    | **Minimum (µg/m³)**               | {observed_min:.2f}    | {predicted_min:.2f}    |
+    | **Maximum (µg/m³)**               | {observed_max:.2f}    | {predicted_max:.2f}    |
+    | **Mean (µg/m³)**                  | {observed_mean:.2f}   | {predicted_mean:.2f}   |
+    | <span style='color:green;'>**Good**</span> count           | {observed_counts.get('Good', 0)}    | {predicted_counts.get('Good', 0)}    |
+    | <span style='color:yellow;'>**Moderate**</span> count    | {observed_counts.get('Moderate', 0)} | {predicted_counts.get('Moderate', 0)} |
+    | <span style='color:orange;'>**Unhealthy for Sensitive Groups**</span> count | {observed_counts.get('Unhealthy for Sensitive Groups', 0)} | {predicted_counts.get('Unhealthy for Sensitive Groups', 0)} |
+    | <span style='color:red;'>**Unhealthy**</span> count  | {observed_counts.get('Unhealthy', 0)} | {predicted_counts.get('Unhealthy', 0)} |
+    | <span style='color:purple;'>**Very Unhealthy**</span> count | {observed_counts.get('Very Unhealthy', 0)} | {predicted_counts.get('Very Unhealthy', 0)} |
+    | <span style='color:darkred;'>**Hazardous**</span> count     | {observed_counts.get('Hazardous', 0)} | {predicted_counts.get('Hazardous', 0)} |
     - <span style='color:green;'>**0-12 µg/m³ (Good)**</span>: Satisfactory, posing little or no health risk. 
-      <br>Observed: {observed_counts.get('Good', 0)}, Predicted: {predicted_counts.get('Good', 0)}
+      <br>
     - <span style='color:yellow;'>**12.1-35.4 µg/m³ (Moderate)**</span>: Acceptable, but sensitive individuals may experience health issues. 
-      <br>Observed: {observed_counts.get('Moderate', 0)}, Predicted: {predicted_counts.get('Moderate', 0)}
+      <br>
     - <span style='color:orange;'>**35.5-55.4 µg/m³ (Unhealthy for Sensitive Groups)**</span>: Sensitive groups may experience health effects. 
-      <br>Observed: {observed_counts.get('Unhealthy for Sensitive Groups', 0)}, Predicted: {predicted_counts.get('Unhealthy for Sensitive Groups', 0)}
+      <br>
     - <span style='color:red;'>**55.5-150.4 µg/m³ (Unhealthy)**</span>: Everyone may experience health effects. 
-      <br>Observed: {observed_counts.get('Unhealthy', 0)}, Predicted: {predicted_counts.get('Unhealthy', 0)}
+      <br>
     - <span style='color:purple;'>**150.5-250.4 µg/m³ (Very Unhealthy)**</span>: Severe health effects for everyone. 
-      <br>Observed: {observed_counts.get('Very Unhealthy', 0)}, Predicted: {predicted_counts.get('Very Unhealthy', 0)}
+      <br>
     - <span style='color:darkred;'>**>250.5 µg/m³ (Hazardous)**</span>: Health warnings; emergency conditions. 
-      <br>Observed: {observed_counts.get('Hazardous', 0)}, Predicted: {predicted_counts.get('Hazardous', 0)}
+      <br>
     <br>For more information, visit [here](https://aqicn.org/faq/2013-09-09/revised-pm25-aqi-breakpoints/).
     """, unsafe_allow_html=True)
-    st.markdown("""
-    <h3 style='text-align: center;'>Spatial Correlation Map</h3>
-    """, unsafe_allow_html=True)
-    st.pydeck_chart(corr_deck)
-    # Download filtered data as CSV
+    # st.markdown("""
+    # <h3 style='text-align: center;'>Spatial Correlation Map</h3>
+    # """, unsafe_allow_html=True)
+    # st.pydeck_chart(corr_deck)
+    # # Download filtered data as CSV
     csv_data = main_df.to_csv(index=False).encode('utf-8')
 
     st.download_button(
