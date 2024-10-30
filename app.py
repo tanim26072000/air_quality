@@ -12,7 +12,7 @@ import numpy as np
 st.set_page_config(page_title="Interactive PM2.5 Data", layout="wide")
 # Title
 st.markdown("""
-    <h1 style='text-align: center;'>Interactive PM&#8322;&#x2E;&#8325; Data with spatio-temporal Selection</h1>
+    <h1 style='text-align: center;'>Interactive PM&#8322;&#x2E;&#8325; Data Visualization with Spatio-temporal Selection</h1>
 """, unsafe_allow_html=True)
 # gdf = gpd.read_file(
 #     'bgd_adm_bbs_20201113_shp/bgd_admbnda_adm3_bbs_20201113.shp')
