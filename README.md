@@ -40,6 +40,10 @@ Each member played a vital role in bringing this project to life. Thank you for 
 - **Library for webapp deployment**: Streamlit
 - **Data Visualization**: Pydeck
 
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
 ## Access the Website
 
 The website is publicly available for anyone to explore. You can access it at:
