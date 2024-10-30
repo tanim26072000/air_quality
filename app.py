@@ -347,11 +347,11 @@ if st.button('Generate Plot'):
 
     # Add the markdown section with statistics and counts combined in a single table
     st.markdown(f"""
-    ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
+    ### Statistical overview:
     Total data points within selected spatio-temporal range: {total_count}<br>
     Root of mean squared error (RMSE): {rmse:.2f}<br>
     Mean absolute error (MAE): {mae:.2f}<br>
-    **Comparison of Observed and Predicted Values**
+    **Comparison of Observed and Predicted Values of the selected model**
 
     | Statistic/Category                 | Observed | Predicted ({selected_model}) |
     |-----------------------------------|-----------------------|------------------------|
@@ -363,7 +363,8 @@ if st.button('Generate Plot'):
     | <span style='color:orange;'>**Unhealthy for Sensitive Groups**</span> count | {observed_counts.get('Unhealthy for Sensitive Groups', 0)} | {predicted_counts.get('Unhealthy for Sensitive Groups', 0)} |
     | <span style='color:red;'>**Unhealthy**</span> count  | {observed_counts.get('Unhealthy', 0)} | {predicted_counts.get('Unhealthy', 0)} |
     | <span style='color:purple;'>**Very Unhealthy**</span> count | {observed_counts.get('Very Unhealthy', 0)} | {predicted_counts.get('Very Unhealthy', 0)} |
-    | <span style='color:darkred;'>**Hazardous**</span> count     | {observed_counts.get('Hazardous', 0)} | {predicted_counts.get('Hazardous', 0)} |
+    | <span style='color:darkred;'>**Hazardous**</span> count     | {observed_counts.get('Hazardous', 0)} | {predicted_counts.get('Hazardous', 0)} |\
+    ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
     - <span style='color:green;'>**0-12 µg/m³ (Good)**</span>: Satisfactory, posing little or no health risk. 
       <br>
     - <span style='color:yellow;'>**12.1-35.4 µg/m³ (Moderate)**</span>: Acceptable, but sensitive individuals may experience health issues. 
