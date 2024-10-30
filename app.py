@@ -363,7 +363,7 @@ if st.button('Generate Plot'):
     | <span style='color:orange;'>**Unhealthy for Sensitive Groups**</span> count | {observed_counts.get('Unhealthy for Sensitive Groups', 0)} | {predicted_counts.get('Unhealthy for Sensitive Groups', 0)} |
     | <span style='color:red;'>**Unhealthy**</span> count  | {observed_counts.get('Unhealthy', 0)} | {predicted_counts.get('Unhealthy', 0)} |
     | <span style='color:purple;'>**Very Unhealthy**</span> count | {observed_counts.get('Very Unhealthy', 0)} | {predicted_counts.get('Very Unhealthy', 0)} |
-    | <span style='color:darkred;'>**Hazardous**</span> count     | {observed_counts.get('Hazardous', 0)} | {predicted_counts.get('Hazardous', 0)} |\
+    | <span style='color:darkred;'>**Hazardous**</span> count     | {observed_counts.get('Hazardous', 0)} | {predicted_counts.get('Hazardous', 0)} |
     ### PM$_{{2.5}}$ Concentration Ranges and Health Impacts:
     - <span style='color:green;'>**0-12 µg/m³ (Good)**</span>: Satisfactory, posing little or no health risk. 
       <br>
