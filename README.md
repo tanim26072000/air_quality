@@ -36,8 +36,8 @@ This project was developed collaboratively by the following contributors:
 Each member played a vital role in bringing this project to life. Thank you for your hard work and dedication!
 
 ## Technologies Used
--**Programming language**: Python
--**Library for webapp deployment**: Streamlit
+- **Programming language**: Python
+- **Library for webapp deployment**: Streamlit
 - **Data Visualization**: Pydeck
 
 ## License
