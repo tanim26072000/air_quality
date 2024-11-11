@@ -1,11 +1,7 @@
 import streamlit as st
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
-from geopandas.tools import sjoin
 import pydeck as pdk
-import os
-from sklearn.metrics import r2_score, mean_absolute_error
+from sklearn.metrics import mean_absolute_error
 import numpy as np
 
 # Set page configuration to wide layout
@@ -40,8 +36,6 @@ with col2:
 
 data = pd.read_hdf(
     'pm25_final.h5', key=f'{selected_month}_{selected_year}')
-
-corr_df = pd.read_csv('corr_df.csv')
 # # Convert lat/lon data points into a GeoDataFrame
 # geometry = [Point(xy) for xy in zip(data['longitude'], data['latitude'])]
 # geo_data = gpd.GeoDataFrame(data, crs="EPSG:4326", geometry=geometry)
@@ -60,7 +54,6 @@ if scope == 'Whole Bangladesh':
     # filtered_corr = sjoin(
     #     geo_corr, gdf, how="inner", predicate="within")
     filtered_geo_data= data
-    filtered_corr= corr_df
     s = 'Bangladesh'
     z = 5.5
 
@@ -83,7 +76,6 @@ elif scope == 'Division':
     # filtered_corr = sjoin(
     #     geo_corr, selected_division_shape, how="inner", predicate="within")
     filtered_geo_data = data[data['ADM1_EN'] == selected_division]
-    filtered_corr = corr_df[corr_df['ADM1_EN'] == selected_division]
 
 elif scope == 'District':
     # Select a district
@@ -100,7 +92,6 @@ elif scope == 'District':
 
     
     filtered_geo_data = data[data['ADM2_EN'] == selected_district]
-    filtered_corr = corr_df[corr_df['ADM2_EN'] == selected_district]
 
     
 
@@ -110,10 +101,6 @@ selected_model = st.radio('Select Model to compare prediction with observed valu
 selected_model = selected_model.lower()
 df = filtered_geo_data[['latitude', 'longitude', 'observed',
                         'gnn+lstm', 'gnn', 'cnn+lstm', 'cnn', 'ADM1_EN', 'ADM2_EN', 'ADM3_EN']]
-corr = filtered_corr[['latitude', 'longitude',
-                     'gnn+lstm', 'gnn', 'cnn+lstm', 'cnn', 'ADM1_EN', 'ADM2_EN', 'ADM3_EN']]
-# corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']
-#      ] = corr[['gnn+lstm', 'gnn', 'cnn+lstm', 'cnn']]*10000
 main_df = df.copy()
 
 
@@ -150,14 +137,9 @@ df = df.assign(observed_status=df['observed'].apply(lambda x: get_status_color(x
                     lambda x: get_status_color(x)[1]),
                predicted_color_css=df[selected_model].apply(
                     lambda x: get_status_color(x)[2]),
-            #    observed=df['observed'].round(2),
                predicted_elevation= df[selected_model] * 50,
                observed_elevation= df['observed'] * 50
                )
-
-# For corr DataFrame, continue using assign to avoid issues
-corr = corr.assign(scaled_elevation=corr[selected_model] * 5000)
-df[['predicted_elevation', 'observed_elevation']] = df[[selected_model,'observed']] * 50
 # print(type(df), df.shape)
 # corr.rename(columns={'corr_gnn_lstm': 'gnn+lstm', 'corr_gnn':'gnn', 'corr_cnn_lstm':'cnn+lstm','cor_cnn':'cnn'})
 # basemap_options = st.selectbox(
@@ -223,19 +205,6 @@ if st.button('Generate Plot'):
         extruded=True,  # Extrude to give a 3D effect
         elevation_scale=1  # Scale of the elevation
     )
-    corr_layer = pdk.Layer(
-        "GridCellLayer",
-        corr,
-        # Specify the center of each grid cell
-        get_position='[longitude, latitude]',
-        cell_size=1000,  # Size of the grid cells (in meters)
-        get_elevation='scaled_elevation',  # Elevation represents the predicted value
-        # Color based on predicted value
-        get_fill_color=f'[255, {selected_model}*255, 100, 128]',
-        pickable=True,
-        extruded=True,  # Extrude to give a 3D effect
-        elevation_scale=1  # Scale of the elevation
-    )
 
     # Step 3: Define a view state for both maps (same view for consistency)
     view_state = pdk.ViewState(
@@ -278,18 +247,6 @@ if st.button('Generate Plot'):
                 <b>Observed:</b> <span style='color:{{observed_color_css}};'>{{observed}} ({{observed_status}})</span><br/>
                 <b>Predicted:</b> <span style='color:{{predicted_color_css}};'>{{{selected_model}}} ({{predicted_status}})</span>
                 """,
-            "style": {"color": "white"}
-        }
-    )
-    corr_deck = pdk.Deck(
-        layers=[corr_layer],
-        initial_view_state=view_state,
-        map_style=f'mapbox://styles/mapbox/streets-v12',
-        tooltip={
-            "html": f"<b>Latitude:</b> {{latitude}} <br><b>Longitude:</b> {{longitude}}<br>"
-            f"<b>Division:</b> {{ADM1_EN}}<br><b>District:</b> {{ADM2_EN}}<br>"
-            f"<b>Upazila:</b> {{ADM3_EN}}<br>"
-            f"<b>Correlation:</b> <span style='color:yellow;'>{{{selected_model}}}</span>",
             "style": {"color": "white"}
         }
     )
@@ -349,8 +306,8 @@ if st.button('Generate Plot'):
     st.markdown(f"""
     ### Statistical overview:
     Total data points within selected spatio-temporal range: {total_count}<br>
-    Root of mean squared error (RMSE): {rmse:.2f}<br>
-    Mean absolute error (MAE): {mae:.2f}<br>
+    Root of mean squared error (RMSE): {rmse:.2f} µg/m³<br>
+    Mean absolute error (MAE): {mae:.2f} µg/m³<br>
     **Comparison of Observed and Predicted Values of the selected model**
 
     | Statistic/Category                 | Observed | Predicted ({selected_model}) |
@@ -384,6 +341,8 @@ if st.button('Generate Plot'):
     # """, unsafe_allow_html=True)
     # st.pydeck_chart(corr_deck)
     # # Download filtered data as CSV
+    main_df.rename(
+        columns={'ADM1_EN': 'Division', 'ADM2_EN': 'District', 'ADM3_EN': 'Upazilla'}, inplace=True)
     csv_data = main_df.to_csv(index=False).encode('utf-8')
 
     st.download_button(
